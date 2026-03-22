@@ -1,0 +1,20 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/services/__pycache__/
+
+# Node
+frontend/node_modules/
+electron/node_modules/
+
+# Build outputs
+frontend/dist/
+electron/dist/
+
+# System
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+*.env

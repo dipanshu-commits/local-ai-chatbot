@@ -1,0 +1,29 @@
+{
+  "name": "local-ai-chat",
+  "version": "1.0.0",
+  "description": "Local AI Chat App",
+  "main": "main.js",
+  "author": "Deepa",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.localai.chat",
+    "productName": "Local AI",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.0.0",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
+  }
+}
