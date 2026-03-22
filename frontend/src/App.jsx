@@ -90,6 +90,7 @@ export default function App() {
 
   const messagesEndRef = useRef(null)
   const textareaRef    = useRef(null)
+  const abortRef       = useRef(null)
 
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme) }, [theme])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
@@ -144,11 +145,14 @@ export default function App() {
     setInput('')
     setLoading(true)
 
+    abortRef.current = new AbortController()
+
     try {
       const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated, temperature: settings.temperature, system_prompt: buildSystemPrompt() })
+        body: JSON.stringify({ messages: updated, temperature: settings.temperature, system_prompt: buildSystemPrompt() }),
+        signal: abortRef.current.signal
       })
 
       const reader = res.body.getReader()
@@ -169,12 +173,20 @@ export default function App() {
           return next
         })
       }
-    } catch {
-      setMessages([...updated, { role: 'assistant', content: '⚠️ Backend not reachable. Make sure it is running!' }])
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        setMessages([...updated, { role: 'assistant', content: '⚠️ Backend not reachable. Make sure it is running!' }])
+      }
       setLoading(false)
     } finally {
+      abortRef.current = null
       textareaRef.current?.focus()
     }
+  }
+
+  const stopMessage = () => {
+    if (abortRef.current) abortRef.current.abort()
+    setLoading(false)
   }
 
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
@@ -182,17 +194,21 @@ export default function App() {
   const copyText = (text, id) => { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(null), 2000) }
 
   const startNewChat = () => {
+    if (abortRef.current) abortRef.current.abort()
     setMessages([])
     setActiveChatId(null)
     setPersona(PERSONAS.default)
     setShowSettings(false)
+    setLoading(false)
   }
 
   const loadChat = (chat) => {
+    if (abortRef.current) abortRef.current.abort()
     setMessages(chat.messages)
     setActiveChatId(chat.id)
     setPersona(detectPersona(chat.messages))
     setShowSettings(false)
+    setLoading(false)
   }
 
   const deleteChat = (e, id) => {
@@ -214,7 +230,6 @@ export default function App() {
 
       {toast && <div className="toast">{toast}</div>}
 
-      {/* CUSTOM TITLE BAR — only shows in Electron */}
       {isElectron && (
         <div className="title-bar">
           <div className="title-bar-left">
@@ -354,7 +369,6 @@ export default function App() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* SETTINGS PANEL */}
             {showSettings && (
               <div className="settings-panel">
                 <div className="settings-header">
@@ -406,7 +420,10 @@ export default function App() {
                 placeholder={`Message ${persona.name}... (Enter to send)`}
                 rows={1}
               />
-              <button className="send-btn" onClick={() => sendMessage()} disabled={loading || !input.trim()}>➤</button>
+              {loading
+                ? <button className="send-btn stop-btn" onClick={stopMessage}>⏹</button>
+                : <button className="send-btn" onClick={() => sendMessage()} disabled={!input.trim()}>➤</button>
+              }
             </div>
             <div className="input-hint">Enter to send · Shift+Enter for new line · ⚙️ for personality settings</div>
           </div>

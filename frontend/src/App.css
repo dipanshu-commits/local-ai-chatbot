@@ -741,3 +741,15 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .electron-mode .chat-header { display: none; }
 .electron-mode .sidebar-logo { display: none; }
 .electron-mode .persona-card { display: none; }
+
+
+/* ===== STOP BUTTON ===== */
+.stop-btn {
+  background: #ff4444 !important;
+  animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 6px #ff4444; }
+  50% { box-shadow: 0 0 14px #ff4444; }
+}
