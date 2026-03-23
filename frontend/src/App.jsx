@@ -78,6 +78,7 @@ export default function App() {
   const [messages, setMessages]         = useState([])
   const [input, setInput]               = useState('')
   const [loading, setLoading]           = useState(false)
+  const [streaming, setStreaming]       = useState(false)
   const [theme, setTheme]               = useState('dark')
   const [persona, setPersona]           = useState(PERSONAS.default)
   const [copied, setCopied]             = useState(null)
@@ -138,7 +139,7 @@ export default function App() {
 
   const sendMessage = async (text) => {
     const content = text || input.trim()
-    if (!content || loading) return
+    if (!content || loading || streaming) return
     const userMsg = { role: 'user', content }
     const updated = [...messages, userMsg]
     setMessages(updated)
@@ -161,6 +162,7 @@ export default function App() {
 
       setMessages([...updated, { role: 'assistant', content: '' }])
       setLoading(false)
+      setStreaming(true)
 
       while (true) {
         const { done, value } = await reader.read()
@@ -177,8 +179,9 @@ export default function App() {
       if (e.name !== 'AbortError') {
         setMessages([...updated, { role: 'assistant', content: '⚠️ Backend not reachable. Make sure it is running!' }])
       }
-      setLoading(false)
     } finally {
+      setLoading(false)
+      setStreaming(false)
       abortRef.current = null
       textareaRef.current?.focus()
     }
@@ -187,6 +190,7 @@ export default function App() {
   const stopMessage = () => {
     if (abortRef.current) abortRef.current.abort()
     setLoading(false)
+    setStreaming(false)
   }
 
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
@@ -200,6 +204,7 @@ export default function App() {
     setPersona(PERSONAS.default)
     setShowSettings(false)
     setLoading(false)
+    setStreaming(false)
   }
 
   const loadChat = (chat) => {
@@ -209,6 +214,7 @@ export default function App() {
     setPersona(detectPersona(chat.messages))
     setShowSettings(false)
     setLoading(false)
+    setStreaming(false)
   }
 
   const deleteChat = (e, id) => {
@@ -249,7 +255,6 @@ export default function App() {
       )}
 
       <div className={`main-body ${isElectron ? 'electron-mode' : ''}`}>
-        {/* SIDEBAR */}
         <div className="sidebar">
           <div className="sidebar-logo">
             <div className="logo-icon">🧠</div>
@@ -309,7 +314,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* CHAT AREA */}
         <div className="chat-area">
           <div className="chat-header">
             <div className="chat-header-left">
@@ -362,7 +366,9 @@ export default function App() {
                   <div className="avatar">{persona.emoji}</div>
                   <div className="message-content">
                     <div className="message-label">{persona.name}</div>
-                    <div className="message-bubble"><div className="typing-indicator"><span /><span /><span /></div></div>
+                    <div className="message-bubble">
+                      <div className="typing-indicator"><span /><span /><span /></div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -420,7 +426,7 @@ export default function App() {
                 placeholder={`Message ${persona.name}... (Enter to send)`}
                 rows={1}
               />
-              {loading
+              {(loading || streaming)
                 ? <button className="send-btn stop-btn" onClick={stopMessage}>⏹</button>
                 : <button className="send-btn" onClick={() => sendMessage()} disabled={!input.trim()}>➤</button>
               }
